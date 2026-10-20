@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PawBrief — AI Animal Rescue to Vet Handoff</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+:root {
+  --bg: #f2f6f5;
+  --ink: #112d2b;
+  --card: #ffffff;
+  --acc: #0f766e;
+  --acc-light: #ccfbf1;
+  --acc-hover: #115e59;
+  --mut: #56716e;
+  --line: #d1dedc;
+  --rep: #b45309;
+  --rep-bg: #fef3c7;
+  --res: #1d4ed8;
+  --res-bg: #dbeafe;
+  --vet: #15803d;
+  --vet-bg: #dcfce7;
+  --vis: #7c3aed;
+  --vis-bg: #ede9fe;
+  --unk: #64748b;
+  --unk-bg: #f1f5f9;
+  --warn-bg: #fffbeb;
+  --warn-border: #f59e0b;
+  --emerg: #dc2626;
+  --emerg-bg: #fee2e2;
+  --urg: #ea580c;
+  --urg-bg: #ffedd5;
+  --rout: #2563eb;
+  --rout-bg: #eff6ff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Figtree, system-ui, sans-serif; }
+header { max-width: 900px; margin: auto; padding: 16px 16px 4px; }
+.top-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+h1 { font: 800 32px/1.1 Bricolage Grotesque, system-ui; margin: 0; letter-spacing: -0.5px; color: var(--ink); }
+.badge-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: var(--acc-light); color: var(--acc); padding: 3px 8px; border-radius: 4px; margin-left: 6px; }
+.sub { color: var(--mut); margin: 3px 0 10px; font-size: 14px; }
+
+/* Status Notification Banner */
+#sync-status-bar { background: #e6fffa; border: 1px solid #99f6e4; color: #0f766e; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+#sync-status-bar.offline { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+
+/* Role & Auth Bar */
+.auth-bar { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.role-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.role-label { font-size: 12px; font-weight: 700; color: var(--mut); text-transform: uppercase; margin-right: 4px; }
+.role-btn { background: #f8faf9; color: var(--ink); border: 1px solid var(--line); font-size: 13px; font-weight: 600; padding: 5px 11px; border-radius: 20px; cursor: pointer; transition: all 0.15s; }
+.role-btn:hover { border-color: var(--acc); }
+.role-btn.active { background: var(--acc); color: #fff; border-color: var(--acc); box-shadow: 0 1px 3px rgba(15,118,110,0.3); }
+.role-btn.role-vet.active { background: var(--vet); border-color: var(--vet); }
+.role-btn.role-rescuer.active { background: var(--res); border-color: var(--res); }
+.user-identity { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--acc); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; overflow: hidden; }
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.auth-action-btn { background: #fff; color: var(--ink); border: 1px solid var(--line); padding: 5px 10px; font-size: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+.auth-action-btn:hover { background: #f1f5f4; }
+
+.warn { background: var(--warn-bg); border-left: 4px solid var(--warn-border); padding: 8px 12px; font-size: 13px; border-radius: 4px; color: #78350f; line-height: 1.4; }
+.alert-urgent { background: #fef2f2; border-left: 4px solid #ef4444; padding: 8px 12px; font-size: 13px; border-radius: 4px; color: #991b1b; line-height: 1.4; margin-bottom: 12px; }
+
+main { max-width: 900px; margin: auto; padding: 4px 16px 60px; }
+nav { display: flex; gap: 8px; margin: 12px 0 16px; }
+nav button { flex: 1; padding: 11px; font-size: 15px; font-weight: 700; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
+nav button.on { background: var(--ink); color: #fff; border-color: var(--ink); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+h2 { font: 800 20px Bricolage Grotesque, system-ui; margin: 0 0 10px; color: var(--ink); }
+label { display: block; font-weight: 600; font-size: 13px; margin: 10px 0 4px; color: var(--ink); }
+input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; font: inherit; background: #fff; color: var(--ink); }
+textarea { min-height: 90px; resize: vertical; }
+button { font: 600 14px Figtree, sans-serif; padding: 10px 16px; border: 0; border-radius: 7px; background: var(--acc); color: #fff; cursor: pointer; transition: background 0.15s; }
+button:hover { background: var(--acc-hover); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.alt { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+button.alt:hover { background: #f8faf9; border-color: var(--mut); }
+button.danger { background: #dc2626; color: #fff; }
+button.whatsapp { background: #25D366; color: #fff; font-weight: 700; }
+button.whatsapp:hover { background: #1ebd5a; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #f59e0b; outline-offset: 1px; }
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 140px; }
+.hide { display: none !important; }
+.err { color: #b42318; font-size: 13px; margin-top: 8px; font-weight: 500; }
+
+/* Impact Panel */
+.impact-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.impact-tile { background: #fbfdfc; border: 1px solid var(--line); border-radius: 8px; padding: 12px; text-align: left; }
+.impact-tile b { display: block; font: 800 24px/1 Bricolage Grotesque, system-ui; color: var(--acc); margin-bottom: 4px; }
+.impact-tile.alert b { color: #dc2626; }
+.impact-tile .lbl { font-size: 11px; font-weight: 600; color: var(--mut); line-height: 1.25; display: block; }
+.impact-tile .sublbl { font-size: 10px; color: #94a3b8; margin-top: 2px; display: block; }
+
+/* TrustTrace bar */
+.trace-bar-wrap { margin-top: 10px; background: #f8faf9; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.trace-bar-header { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.trace-bar-progress { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #e2e8f0; }
+.tb-rep { background: var(--rep); transition: width 0.3s; }
+.tb-res { background: var(--res); transition: width 0.3s; }
+.tb-vet { background: var(--vet); transition: width 0.3s; }
+.tb-vis { background: var(--vis); transition: width 0.3s; }
+.trace-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; font-weight: 600; }
+.trace-legend span { display: flex; align-items: center; gap: 5px; }
+.trace-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+
+/* Map View */
+#map { height: 320px; border-radius: 8px; border: 1px solid var(--line); background: #e6edea; position: relative; overflow: hidden; }
+.map-filter-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.map-filters { display: flex; gap: 6px; }
+.map-filter-btn { padding: 4px 10px; font-size: 12px; border-radius: 15px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+.map-filter-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.radar-grid { width: 100%; height: 100%; position: relative; background: radial-gradient(circle, #cbd5e1 1px, transparent 1px) 0 0/24px 24px, #eef3f2; }
+.radar-pin { position: absolute; transform: translate(-50%, -50%); cursor: pointer; display: flex; flex-direction: column; align-items: center; z-index: 10; transition: transform 0.15s; }
+.radar-pin:hover { transform: translate(-50%, -50%) scale(1.15); z-index: 20; }
+.radar-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.radar-tag { font-size: 10px; font-weight: 700; background: rgba(17,45,43,0.85); color: #fff; padding: 1px 5px; border-radius: 3px; margin-top: 2px; white-space: nowrap; }
+
+/* Case Cards */
+.case { cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; background: #fff; transition: border-color 0.15s; }
+.case:hover { border-color: var(--acc); background: #fcfdfd; }
+.case-thumb { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--line); }
+.case-info { flex: 1; min-width: 0; }
+.case-title { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.case-time-badge { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: #f1f5f9; color: var(--mut); font-weight: 600; }
+.case-time-badge.overdue { background: #fee2e2; color: #b91c1c; font-weight: 700; }
+
+/* Pills & Badges */
+.pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; height: fit-content; text-transform: capitalize; }
+.pill.reported { color: var(--rep); background: var(--rep-bg); border-color: var(--rep); }
+.pill.awaiting-assignment { color: #b45309; background: #fef3c7; border-color: #b45309; }
+.pill.assigned { color: #d97706; background: #fef3c7; border-color: #d97706; }
+.pill.accepted { color: #2563eb; background: #eff6ff; border-color: #2563eb; }
+.pill.rescuer-en-route { color: #0284c7; background: #e0f2fe; border-color: #0284c7; }
+.pill.animal-reached { color: #4f46e5; background: #e0e7ff; border-color: #4f46e5; }
+.pill.animal-collected { color: #4f46e5; background: #e0e7ff; border-color: #4f46e5; }
+.pill.handed-to-vet { color: var(--vet); background: var(--vet-bg); border-color: var(--vet); }
+.pill.vet-assessment-recorded { color: #047857; background: #d1fae5; border-color: #047857; }
+.pill.resolved { color: #059669; background: #ecfdf5; border-color: #059669; }
+.pill.cancelled { color: #64748b; background: #f1f5f9; border-color: #64748b; }
+
+.pill.emergency { color: #b91c1c; background: #fee2e2; border-color: #b91c1c; }
+.pill.urgent { color: #c2410c; background: #ffedd5; border-color: #c2410c; }
+.pill.routine { color: #1d4ed8; background: #dbeafe; border-color: #1d4ed8; }
+.pill.pending { color: #475569; background: #f1f5f9; border-color: #475569; }
+
+.pill.rescuer-observed { color: var(--res); background: var(--res-bg); border-color: var(--res); }
+.pill.vet-confirmed { color: var(--vet); background: var(--vet-bg); border-color: var(--vet); }
+.pill.unknown { color: var(--unk); background: var(--unk-bg); border-color: var(--unk); }
+.pill.visual { color: var(--vis); background: var(--vis-bg); border-color: var(--vis); }
+
+/* Observations & TrustTrace */
+.obs { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.obs-content { flex: 1; }
+.obs-meta { font-size: 12px; color: var(--mut); margin-top: 2px; }
+.tl { list-style: none; padding: 0; margin: 10px 0 0; border-left: 3px solid var(--acc); }
+.tl li { padding: 0 0 14px 14px; position: relative; }
+.tl li:before { content: ""; position: absolute; left: -8px; top: 6px; width: 11px; height: 11px; border-radius: 50%; background: var(--acc); }
+
+/* Vernacular Provenance Card */
+.vernacular-card { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+.vernacular-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.vernacular-title { font-weight: 700; font-size: 14px; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+
+/* Photo Uploader */
+.photo-box { border: 2px dashed var(--line); border-radius: 8px; padding: 14px; text-align: center; background: #fbfcfc; margin-top: 8px; }
+.photo-box:hover { border-color: var(--acc); }
+.photo-preview-wrap { display: flex; align-items: center; gap: 12px; text-align: left; margin-top: 8px; }
+.photo-preview-wrap img { width: 80px; height: 80px; border-radius: 6px; object-fit: cover; border: 1px solid var(--line); }
+.photo-disclaimer { font-size: 11px; color: var(--mut); margin-top: 6px; font-style: italic; }
+
+/* Clinic Discovery Card */
+.clinic-card { background: #fbfdfc; border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.clinic-card h4 { margin: 0 0 4px; font-size: 14px; color: var(--ink); }
+.clinic-card p { margin: 0; font-size: 12px; color: var(--mut); }
+
+/* Modals */
+.modal-overlay { position: fixed; inset: 0; background: rgba(17,45,43,0.65); backdrop-filter: blur(2px); overflow: auto; z-index: 100; padding: 20px 16px; }
+.modal-wrap { max-width: 760px; margin: auto; }
+.modal-content { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+.modal-content h1, .modal-content h2 { margin-top: 0; }
+
+@media print {
+  body > *:not(#rdlg) { display: none !important; }
+  #rdlg { position: static; padding: 0; background: #fff; backdrop-filter: none; }
+  .noprint { display: none !important; }
+  #rbody { border: 0; padding: 0; box-shadow: none; }
+}
+
+.small { font-size: 13px; color: var(--mut); }
+.mic.rec { background: #dc2626; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<header>
+  <!-- Sync & Storage Status Banner -->
+  <div id="sync-status-bar">
+    <span id="sync-status-text">🟢 Connected to Shared Case Store (Persistence Active)</span>
+    <span id="health-provider-badge" class="badge-tag" style="background:#e0f2fe;color:#0369a1">Gemini Multimodal</span>
+  </div>
+
+  <div class="top-bar">
+    <div>
+      <h1 style="display:inline-flex;align-items:center">PawBrief <span class="badge-tag">Rescue Handoff</span></h1>
+      <p class="sub">Turn rough citizen reports into source-aware, traceable rescue-to-vet handoffs.</p>
+    </div>
+  </div>
+
+  <!-- Role and Firebase Auth Bar -->
+  <div class="auth-bar">
+    <div class="role-group">
+      <span class="role-label">Active Role:</span>
+      <button class="role-btn active" id="btn-role-reporter" data-role="reporter" type="button">👤 Reporter</button>
+      <button class="role-btn role-rescuer" id="btn-role-rescuer" data-role="rescuer" type="button">🚑 Rescuer</button>
+      <button class="role-btn role-vet" id="btn-role-vet" data-role="veterinarian" type="button">🩺 Veterinarian (DVM)</button>
+    </div>
+    <div class="user-identity">
+      <div class="user-avatar" id="u-avatar">U</div>
+      <div>
+        <b id="u-name" style="font-size:13px">Guest Reporter</b>
+        <span class="small" id="u-role-desc" style="display:block;font-size:11px">Citizen / Finder</span>
+      </div>
+      <button class="auth-action-btn" id="btn-auth-action" type="button">Sign in with Google</button>
+    </div>
+  </div>
+
+  <div class="warn">
+    <b>Safety Principle:</b> Assistive reporting and coordination only. PawBrief preserves what was reported, what was observed, and what a veterinarian confirmed. It never produces an automated medical diagnosis or prescribes treatment.
+  </div>
+</header>
+
+<main>
+  <nav>
+    <button class="tab on" data-t="report" type="button">Report an Injured Animal</button>
+    <button class="tab" data-t="dash" type="button">Rescue Dashboard & Map</button>
+  </nav>
+
+  <!-- TAB 1: REPORT FORM -->
+  <div id="report">
+    <section id="s1">
+      <h2>1. Describe what you found</h2>
+      
+      <div class="row">
+        <div>
+          <label for="lang">Language of Reporter</label>
+          <select id="lang">
+            <option value="en-IN">English</option>
+            <option value="hi-IN">हिन्दी (Hindi)</option>
+            <option value="mr-IN">मराठी (Marathi)</option>
+          </select>
+        </div>
+        <div>
+          <label for="animal">Animal (if known)</label>
+          <input id="animal" placeholder="e.g. Stray dog, kitten, indie pup">
+        </div>
+      </div>
+
+      <label for="text">Describe the animal and situation (speak or type in Hindi, Marathi, or English)</label>
+      <textarea id="text" placeholder="e.g. I found a young dog near the bus stop. It is unable to stand on its hind leg and appears bleeding."></textarea>
+      
+      <div class="row" style="margin-top:8px">
+        <button class="mic" id="mic" type="button">🎤 Speak / Record (Hindi / Marathi / English)</button>
+        <span class="small" id="micmsg" style="align-self:center">Editable transcript. Check text before generating brief.</span>
+      </div>
+
+      <!-- Live Voice Recording Indicator -->
+      <div id="voice-recording-status" class="hide" style="background:#fee2e2;border:1px solid #f87171;border-radius:6px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+        <span style="color:#b91c1c;font-weight:700;display:flex;align-items:center;gap:6px">
+          <span style="width:10px;height:10px;background:#dc2626;border-radius:50%;display:inline-block;animation:pulse 1.2s infinite"></span>
+          Recording Voice: <span id="rec-timer">00:00</span>
+        </span>
+        <span class="small" style="color:#7f1d1d">Speak clearly about the animal. Click Stop button when finished.</span>
+      </div>
+
+      <!-- Recorded Voice Note Audio Player -->
+      <div id="voice-player-wrap" class="hide" style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-top:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;font-weight:700;color:#166534">🎙️ Recorded Voice Note</span>
+            <span id="voice-duration-badge" class="pill routine" style="font-size:11px;background:#dcfce7;color:#15803d">0:00 recorded</span>
+          </div>
+          <button class="alt danger" id="btn-remove-voice" type="button" style="padding:3px 8px;font-size:11px">Remove recording</button>
+        </div>
+        <audio id="voice-audio-element" controls style="width:100%;height:36px;margin-top:6px"></audio>
+        <div class="small" style="color:#15803d;margin-top:4px">
+          ✓ Audio note preserved and attached for field rescuers & receiving veterinarians.
+        </div>
+      </div>
+
+      <!-- Multimodal Photo Input -->
+      <div class="photo-box">
+        <label style="margin:0 0 4px;font-weight:700">📷 Attach Photo (Optional Multimodal Visual Context)</label>
+        <div class="small" style="margin-bottom:8px">Gemini Multimodal analyzes visible physical traits only (posture, coat, visible lesions). <b>Never a diagnosis.</b></div>
+        <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
+        <button class="alt" id="btn-browse-photo" type="button">Upload or Take Photo</button>
+        <div id="photo-preview-wrap" class="photo-preview-wrap hide">
+          <img id="photo-preview-img" src="" alt="Attached preview">
+          <div>
+            <b id="photo-filename" style="font-size:12px;display:block">animal-photo.jpg</b>
+            <button class="alt danger" id="btn-remove-photo" type="button" style="padding:3px 8px;font-size:11px;margin-top:4px">Remove photo</button>
+          </div>
+        </div>
+        <div class="photo-disclaimer">Privacy & Safety note: Photos are used solely to confirm animal location and visible physical markings for human clinical assessment.</div>
+      </div>
+
+      <!-- Location Section -->
+      <div class="row" style="margin-top:12px">
+        <button class="alt" id="geo" type="button">📍 Use my current location</button>
+        <span class="small" id="geomsg" style="align-self:center">Pins case on Google Maps for volunteer dispatch.</span>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="loc">Location Details</label>
+          <input id="loc" placeholder="Street, landmark, or auto-filled coordinates">
+        </div>
+        <div>
+          <label for="when">Time Found</label>
+          <input id="when" type="datetime-local">
+        </div>
+      </div>
+
+      <label for="contact">Your Contact Phone / Name (optional, rescue coordination only)</label>
+      <input id="contact" placeholder="e.g. +91 98765 43210 (Sharvari)">
+
+      <p style="margin-top:16px">
+        <button id="gen" type="button" style="font-size:15px;padding:12px 22px">✨ Generate AI Rescue Brief</button>
+      </p>
+      <div class="err" id="e1"></div>
+    </section>
+
+    <!-- SECTION 2: REVIEW AI BRIEF SCREEN -->
+    <section id="s2" class="hide">
+      <h2>2. Review AI Rescue Brief</h2>
+      <p class="small">Generated by Gemini via Vertex AI / Gemini API. Every fact starts with the TrustTrace label <b>Reported</b> until personally observed by a rescuer or confirmed by a veterinarian. Edit anything before saving.</p>
+      
+      <!-- INTAKE TRANSLATION & VERNACULAR PROVENANCE -->
+      <div id="vernacular-provenance-box" class="vernacular-card">
+        <div class="vernacular-header">
+          <span class="vernacular-title">🌐 Intake Translation & Vernacular Provenance</span>
+          <span id="trans-status-badge" class="pill visual">AI-generated</span>
+        </div>
+        <div class="small" style="margin-bottom:6px"><b>Selected / Detected Language:</b> <span id="provenance-lang">English</span></div>
+        <label style="margin-top:4px">Original Citizen Transcript (Unedited):</label>
+        <div id="provenance-original" style="font-style:italic;background:#fff;padding:8px;border:1px solid #cbd5e1;border-radius:4px;font-size:13px"></div>
+        <label for="b-trans" style="margin-top:8px">English Translation for Receiving Veterinarian (Editable):</label>
+        <textarea id="b-trans" rows="2" style="font-size:13px"></textarea>
+        <div class="small" style="font-size:11px;color:#64748b;margin-top:2px">Editing the translation preserves the original vernacular text for audit safety.</div>
+      </div>
+
+      <!-- TRIAGE URGENCY RECOMMENDATION -->
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <b>🚨 Urgency Triage Category:</b>
+          <select id="b-urgency" style="width:auto;padding:4px 8px;font-weight:700">
+            <option value="emergency">Emergency (Severe / Critical)</option>
+            <option value="urgent">Urgent (Prompt Assessment)</option>
+            <option value="routine">Routine (Stable)</option>
+            <option value="pending">Pending Human Assessment</option>
+          </select>
+        </div>
+        <div id="b-urgency-reason" class="small" style="margin-top:6px;color:#9a3412">AI preliminary suggestion based on reported signs. Does not replace human triage.</div>
+      </div>
+
+      <!-- A. ENGLISH VET SUMMARY -->
+      <label for="b-sum">A. English Veterinary Case Summary (Concise & Factual)</label>
+      <textarea id="b-sum"></textarea>
+
+      <!-- B. REPORTED OBSERVATIONS -->
+      <label for="b-obs">B. Reported Observations (One per line, marked Citizen-Reported)</label>
+      <textarea id="b-obs" rows="3"></textarea>
+
+      <!-- E. PHOTO VISUAL CONTEXT -->
+      <div id="photo-obs-group" class="hide">
+        <label for="b-photo-obs">E. Photo Visual Context (~50–100 words physical traits)</label>
+        <div class="small" style="color:var(--vis);font-weight:600;margin-bottom:4px">
+          🛡️ AI-generated visual observations — not a veterinary diagnosis. Human review required.
+        </div>
+        <textarea id="b-photo-obs" rows="3"></textarea>
+      </div>
+
+      <!-- C. GAPS IN REPORTER'S LANGUAGE -->
+      <label for="b-mis">C. Information Still Unknown / To Confirm (In Reporter's Selected Language)</label>
+      <textarea id="b-mis" rows="3"></textarea>
+
+      <!-- ANSWER SPACE FOR REPORTER TO ANSWER THESE QUESTIONS -->
+      <div id="reporter-answers-group" style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;margin-top:10px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label for="b-mis-answers" style="font-weight:700;color:#166534;margin:0;font-size:14px">
+            ✍️ Reporter Answer Space (Provide answers to the questions above)
+          </label>
+          <span class="pill routine" style="font-size:11px;background:#dcfce7;color:#15803d">Reporter Input</span>
+        </div>
+        <p class="small" style="margin:2px 0 8px;color:#15803d">
+          Reporter / finder can answer any of the questions above before dispatch (e.g. accessibility of pickup landmark, animal demeanor, bleeding status):
+        </p>
+        <textarea id="b-mis-answers" rows="3" placeholder="Provide answers here (e.g. Landmark is accessible right beside gate 2; animal is calm and not aggressive; bleeding has stopped)..."></textarea>
+      </div>
+
+      <!-- VOICE NOTE PREVIEW IN BRIEF REVIEW -->
+      <div id="s2-voice-preview" class="hide" style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-top:10px;margin-bottom:12px">
+        <div style="font-weight:700;color:#166534;font-size:13px;display:flex;align-items:center;gap:6px">
+          🎙️ Attached Citizen Voice Note
+        </div>
+        <audio id="s2-voice-audio" controls style="width:100%;height:34px;margin-top:6px"></audio>
+      </div>
+
+      <!-- D. QUESTIONS AND ANSWERS -->
+      <div style="background:#f8faf9;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px">
+        <b style="font-size:14px;color:var(--ink)">D. Clarifying Questions & Supplied Answers</b>
+        <p class="small" style="margin:2px 0 8px">Two distinct blocks: questions to clarify the case vs verified answers.</p>
+        
+        <label for="b-questions" style="margin-top:4px">Follow-up Questions (Gaps to ask citizen/rescuer):</label>
+        <textarea id="b-questions" rows="2" placeholder="e.g. Can the animal bear weight?"></textarea>
+
+        <label for="b-answers" style="margin-top:8px">Supplied Answers (Only include answers actually given):</label>
+        <textarea id="b-answers" rows="2" placeholder="None answered yet (Never fabricate answers)"></textarea>
+      </div>
+
+      <p style="margin-top:16px">
+        <button id="save" type="button" style="font-size:15px;padding:12px 22px">✅ Confirm & Create Rescue Case</button>
+        <button class="alt" id="back" type="button">Back to Edit Report</button>
+      </p>
+      <div class="err" id="e2"></div>
+    </section>
+  </div>
+
+  <!-- TAB 2: DASHBOARD -->
+  <div id="dash" class="hide">
+    <!-- UNACCEPTED CASES ESCALATION BANNER -->
+    <div id="unaccepted-alert-banner" class="alert-urgent hide">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>⚠️ <b>Unaccepted Rescue Alert:</b> <span id="unaccepted-count-txt">0 cases</span> waiting &gt;30 minutes for rescuer acceptance! Dispatcher attention required.</span>
+        <button class="auth-action-btn" id="btn-filter-unaccepted" type="button">View Awaiting Cases</button>
+      </div>
+    </div>
+
+    <!-- IMPACT PANEL STRIP -->
+    <section>
+      <h2>Impact & Speed Metrics</h2>
+      <p class="small" style="margin-top:-6px;margin-bottom:12px">Real-time rescue velocity and evidence verification metrics calculated directly from recorded cases.</p>
+      
+      <div class="impact-strip" id="stats">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- TrustTrace detail distribution bar -->
+      <div class="trace-bar-wrap">
+        <div class="trace-bar-header">
+          <span>TrustTrace Observation Verification Mix</span>
+          <span id="tb-total-count" class="small">0 total observations</span>
+        </div>
+        <div class="trace-bar-progress">
+          <div id="tb-rep-bar" class="tb-rep" style="width:40%" title="Reported"></div>
+          <div id="tb-res-bar" class="tb-res" style="width:30%" title="Rescuer-observed"></div>
+          <div id="tb-vet-bar" class="tb-vet" style="width:30%" title="Vet-confirmed"></div>
+        </div>
+        <div class="trace-legend">
+          <span><i style="background:var(--rep)"></i> Reported: <b id="tb-rep-pct">0%</b></span>
+          <span><i style="background:var(--res)"></i> Rescuer-observed: <b id="tb-res-pct">0%</b></span>
+          <span><i style="background:var(--vet)"></i> Vet-confirmed: <b id="tb-vet-pct">0%</b></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAP VIEW -->
+    <section>
+      <div class="map-filter-bar">
+        <h2>Geospatial Rescue Map (Google Maps Platform)</h2>
+        <div class="map-filters">
+          <button class="map-filter-btn active" data-filter="all" type="button">All Pins</button>
+          <button class="map-filter-btn" data-filter="open" type="button">Open Cases</button>
+          <button class="map-filter-btn" data-filter="urgent" type="button">Waiting &gt;30m</button>
+          <button class="map-filter-btn" data-filter="emergency" type="button">🚨 Emergency</button>
+        </div>
+      </div>
+      <div id="map">
+        <!-- Google Map or Interactive Radar Canvas Fallback -->
+      </div>
+      <div class="key small" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px">
+        <span><i style="background:#b42318;display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px"></i>Reported (Waiting)</span>
+        <span><i style="background:#d97706;display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px"></i>Assigned</span>
+        <span><i style="background:#1d4ed8;display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px"></i>Animal Reached / Collected</span>
+        <span><i style="background:#15803d;display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px"></i>Handed to Vet</span>
+      </div>
+    </section>
+
+    <!-- CASE LIST -->
+    <section>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h2>Rescue Cases</h2>
+        <div style="display:flex;gap:8px">
+          <button class="alt" id="btn-refresh-cases" type="button" style="padding:4px 10px;font-size:12px">🔄 Refresh</button>
+          <button class="alt" id="btn-seed-data" type="button" style="padding:4px 10px;font-size:12px">🌱 Re-seed Demo Data</button>
+        </div>
+      </div>
+      <div id="list">
+        <p class="small">Loading cases…</p>
+      </div>
+    </section>
+
+    <!-- CASE DETAIL VIEW -->
+    <section id="detail" class="hide"></section>
+  </div>
+</main>
+
+<!-- VET HANDOFF REPORT MODAL -->
+<div id="rdlg" class="modal-overlay hide">
+  <div class="modal-wrap">
+    <div class="noprint" style="display:flex;gap:10px;margin-bottom:12px;justify-content:flex-end">
+      <button id="rprint" type="button">🖨️ Print or Save as PDF</button>
+      <button class="alt" id="rcopy" type="button">📋 Copy as Plain Text</button>
+      <button class="alt" id="rclose" type="button">✕ Close</button>
+    </div>
+    <article id="rbody" class="modal-content"></article>
+  </div>
+</div>
+
+<!-- WHATSAPP SHARE PREVIEW MODAL -->
+<div id="wadlg" class="modal-overlay hide">
+  <div class="modal-wrap" style="max-width:600px">
+    <div class="modal-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:12px">
+        <h3 style="margin:0;display:flex;align-items:center;gap:6px">📲 Share Case on WhatsApp</h3>
+        <button class="alt" id="waclose" type="button" style="padding:2px 8px">✕</button>
+      </div>
+
+      <div class="small" style="margin-bottom:12px">
+        Review message preview before sharing. No private reporter phone number will be exposed without consent.
+      </div>
+
+      <div style="margin-bottom:10px">
+        <label><input type="checkbox" id="wa-opt-approx-loc" style="width:auto;margin-right:6px"> Share approximate landmark only (Redact exact GPS coordinates)</label>
+      </div>
+
+      <label for="wa-preview-text">Prefilled WhatsApp Message Preview:</label>
+      <textarea id="wa-preview-text" rows="8" style="font-family:monospace;font-size:12px"></textarea>
+
+      <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end">
+        <button class="alt" id="wacopy" type="button">📋 Copy Message</button>
+        <button class="whatsapp" id="waopen" type="button">🚀 Open WhatsApp</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEARBY VET DISCOVERY MODAL -->
+<div id="vetdlg" class="modal-overlay hide">
+  <div class="modal-wrap" style="max-width:650px">
+    <div class="modal-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:12px">
+        <h3 style="margin:0;display:flex;align-items:center;gap:6px">🏥 Discover Nearby Veterinary Clinics</h3>
+        <button class="alt" id="vetclose" type="button" style="padding:2px 8px">✕</button>
+      </div>
+
+      <p class="small" id="vet-search-info" style="margin-top:0">Searching clinics based on incident location coordinates…</p>
+      
+      <div id="vet-list-container" style="max-height:360px;overflow-y:auto;margin-bottom:12px">
+        <!-- Rendered clinics -->
+      </div>
+
+      <div style="border-top:1px solid var(--line);padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+        <a id="vet-maps-link" href="#" target="_blank" rel="noopener" class="small" style="color:var(--acc);font-weight:700">Open Full Search on Google Maps ↗</a>
+        <button class="alt" id="vetdone" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(async function() {
+  const isFileProtocol = window.location.protocol === "file:";
+  const API_BASE = isFileProtocol ? "http://localhost:8080" : "";
+  const BRIEF_API_URL = `${API_BASE}/api/brief`;
+  const HANDOFF_API_URL = `${API_BASE}/api/handoff`;
+  const CASES_API_URL = `${API_BASE}/api/cases`;
+  const NEARBY_VETS_API_URL = `${API_BASE}/api/nearby-vets`;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  
+  const STATUS = [
+    "reported", "awaiting-assignment", "assigned", "accepted",
+    "rescuer-en-route", "animal-reached", "handed-to-vet",
+    "vet-assessment-recorded", "resolved"
+  ];
+  const LABEL = {
+    "reported": "Reported",
+    "awaiting-assignment": "Awaiting assignment",
+    "assigned": "Assigned",
+    "accepted": "Accepted by rescuer",
+    "rescuer-en-route": "Rescuer en route",
+    "animal-reached": "Animal reached",
+    "animal-collected": "Animal reached",
+    "handed-to-vet": "Handed to vet",
+    "vet-assessment-recorded": "Vet assessment recorded",
+    "resolved": "Resolved",
+    "cancelled": "Cancelled / duplicate",
+    "rescuer-observed": "Rescuer-observed",
+    "vet-confirmed": "Vet-confirmed",
+    "unknown": "Unknown",
+    "emergency": "🚨 Emergency",
+    "urgent": "⚠️ Urgent",
+    "routine": "ℹ️ Routine",
+    "pending": "⏳ Pending assessment"
+  };
+  const fmt = t => {
+    if (!t) return "just now";
+    if (t.toDate) return t.toDate().toLocaleString();
+    if (t instanceof Date) return t.toLocaleString();
+    if (typeof t === "number") return new Date(t).toLocaleString();
+    return new Date(String(t)).toLocaleString();
+  };
+  const lines = s => (s || "").split("\n").map(x => x.trim()).filter(Boolean);
+
+  /* ====== USER STATE & ROLE ====== */
+  let currentUser = {
+    uid: "guest-reporter-1",
+    displayName: "Sharvari (Volunteer)",
+    email: "sharvari@pawbrief.org",
+    photoURL: null,
+    role: "reporter" // 'reporter' | 'rescuer' | 'veterinarian'
+  };
+
+  const savedRole = sessionStorage.getItem("pawbrief_active_role");
+  if (savedRole && ["reporter", "rescuer", "veterinarian"].includes(savedRole)) {
+    currentUser.role = savedRole;
+  }
+
+  function updateRoleUI() {
+    document.querySelectorAll(".role-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.role === currentUser.role);
+    });
+    
+    const roleLabels = {
+      reporter: { title: "Reporter", desc: "Citizen / Finder · Submits cases" },
+      rescuer: { title: "Rescuer", desc: "Rescue Volunteer · Accepts & attends" },
+      veterinarian: { title: "Veterinarian (DVM)", desc: "Authorized Vet · Only role that can Vet-confirm" }
+    };
+    
+    const info = roleLabels[currentUser.role] || roleLabels.reporter;
+    $("u-name").textContent = currentUser.displayName || "Active User";
+    $("u-role-desc").textContent = `${info.title} (${info.desc})`;
+    
+    if (currentUser.photoURL) {
+      $("u-avatar").innerHTML = `<img src="${currentUser.photoURL}" alt="avatar">`;
+    } else {
+      $("u-avatar").textContent = (currentUser.displayName || "U")[0].toUpperCase();
+    }
+  }
+
+  document.querySelectorAll(".role-btn").forEach(btn => {
+    btn.onclick = () => {
+      currentUser.role = btn.dataset.role;
+      sessionStorage.setItem("pawbrief_active_role", currentUser.role);
+      updateRoleUI();
+      if (activeCaseId) openCase(activeCaseId);
+    };
+  });
+
+  $("btn-auth-action").onclick = () => {
+    const name = prompt("Enter your Name for demo identity:", currentUser.displayName);
+    if (name) currentUser.displayName = name;
+    updateRoleUI();
+    if (activeCaseId) openCase(activeCaseId);
+  };
+  updateRoleUI();
+
+  /* ====== PERSISTENT DATA LAYER ====== */
+  let localCases = [];
+
+  async function fetchServerCases() {
+    try {
+      const res = await fetch(CASES_API_URL);
+      if (res.ok) {
+        localCases = await res.json();
+        $("sync-status-bar").classList.remove("offline");
+        $("sync-status-text").textContent = `🟢 Connected to Shared Case Store (${localCases.length} cases synced)`;
+        return;
+      }
+    } catch (err) {
+      console.warn("Backend server not reached, using local fallback cache:", err.message);
+      $("sync-status-bar").classList.add("offline");
+      $("sync-status-text").textContent = "🟠 Local Demo Mode (Backend not reached at " + API_BASE + ")";
+    }
+
+    // Local fallback if server unreachable
+    if (!localCases.length) {
+      const cached = sessionStorage.getItem("pawbrief_cases_cache");
+      if (cached) localCases = JSON.parse(cached);
+    }
+  }
+
+  async function syncCaseChange(updatedCase) {
+    sessionStorage.setItem("pawbrief_cases_cache", JSON.stringify(localCases));
+    notifyStoreChange();
+  }
+
+  $("btn-refresh-cases").onclick = async () => {
+    await fetchServerCases();
+    notifyStoreChange();
+  };
+
+  $("btn-seed-data").onclick = async () => {
+    if (confirm("Reset case records to clean demo state?")) {
+      try {
+        await fetch(`${API_BASE}/api/cases/reset-demo`, { method: "POST" });
+      } catch (e) { /* ignore */ }
+      await fetchServerCases();
+      notifyStoreChange();
+    }
+  };
+
+  // Health check to update provider badge
+  fetch(`${API_BASE}/api/health`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.provider) $("health-provider-badge").textContent = `${data.provider} (${data.model})`;
+    })
+    .catch(() => {});
+
+  /* ====== TAB NAVIGATION ====== */
+  let mapsLoaded = false;
+  document.querySelectorAll(".tab").forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === b));
+      const isDash = b.dataset.t === "dash";
+      $("report").classList.toggle("hide", isDash);
+      $("dash").classList.toggle("hide", !isDash);
+      if (isDash && !mapsLoaded) {
+        mapsLoaded = true;
+        initMapComponent();
+      }
+    };
+  });
+
+  /* ====== VERNACULAR VOICE RECORDING & INPUT ====== */
+  let mediaRecorder = null;
+  let audioStream = null;
+  let audioChunks = [];
+  let attachedAudioBase64 = null;
+  let attachedAudioMime = "audio/webm";
+  let recTimerInterval = null;
+  let recSeconds = 0;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let activeSpeechRec = null;
+
+  function stopAudioRecording() {
+    if (recTimerInterval) {
+      clearInterval(recTimerInterval);
+      recTimerInterval = null;
+    }
+    if (activeSpeechRec) {
+      try { activeSpeechRec.stop(); } catch (e) {}
+      activeSpeechRec = null;
+    }
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      try { mediaRecorder.stop(); } catch (e) {}
+    }
+    if (audioStream) {
+      audioStream.getTracks().forEach(t => t.stop());
+      audioStream = null;
+    }
+    $("mic").classList.remove("rec");
+    $("mic").textContent = "🎤 Speak / Record (Hindi / Marathi / English)";
+    $("voice-recording-status").classList.add("hide");
+  }
+
+  function updateRecTimerDisplay() {
+    recSeconds++;
+    const m = String(Math.floor(recSeconds / 60)).padStart(2, "0");
+    const s = String(recSeconds % 60).padStart(2, "0");
+    $("rec-timer").textContent = `${m}:${s}`;
+    $("mic").textContent = `⏹ Stop Recording (${m}:${s})`;
+  }
+
+  $("mic").onclick = async () => {
+    // If currently recording, clicking stops it
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      stopAudioRecording();
+      return;
+    }
+
+    // Check mediaDevices support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      $("micmsg").textContent = "Microphone access is not supported in this browser. Please type directly.";
+      return;
+    }
+
+    try {
+      $("micmsg").textContent = "Requesting microphone access…";
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      console.warn("Microphone access error:", err);
+      $("micmsg").textContent = "Microphone access was denied or unavailable. Please check microphone permissions in your browser or type directly.";
+      return;
+    }
+
+    audioChunks = [];
+    let chosenMime = "";
+    const candidateMimes = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/wav",
+      "audio/mp4"
+    ];
+    for (const m of candidateMimes) {
+      if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) {
+        chosenMime = m;
+        break;
+      }
+    }
+    attachedAudioMime = chosenMime || "audio/webm";
+
+    try {
+      mediaRecorder = chosenMime ? new MediaRecorder(audioStream, { mimeType: chosenMime }) : new MediaRecorder(audioStream);
+    } catch (e) {
+      mediaRecorder = new MediaRecorder(audioStream);
+    }
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data && e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+      if (audioChunks.length === 0) return;
+      const audioBlob = new Blob(audioChunks, { type: attachedAudioMime });
+      
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        attachedAudioBase64 = reader.result;
+        
+        // Show player in step 1
+        $("voice-audio-element").src = URL.createObjectURL(audioBlob);
+        const durationFormatted = `${Math.floor(recSeconds / 60)}:${String(recSeconds % 60).padStart(2, "0")}`;
+        $("voice-duration-badge").textContent = `${durationFormatted} recorded`;
+        $("voice-player-wrap").classList.remove("hide");
+        $("micmsg").textContent = "✅ Voice note captured! Sending for AI transcription…";
+
+        // Call backend /api/transcribe
+        try {
+          const res = await fetch(`${API_BASE}/api/transcribe`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              audioBase64: attachedAudioBase64,
+              mimeType: attachedAudioMime,
+              language: $("lang").value
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.transcript) {
+              const currentText = $("text").value.trim();
+              $("text").value = currentText ? `${currentText} ${data.transcript}` : data.transcript;
+              $("micmsg").textContent = "✅ Audio transcribed successfully! Check and edit text above.";
+              return;
+            }
+          }
+        } catch (transErr) {
+          console.warn("Transcription call failed:", transErr);
+        }
+
+        $("micmsg").textContent = "✅ Voice note saved and attached to report! You can also type or edit details above.";
+      };
+      reader.readAsDataURL(audioBlob);
+    };
+
+    recSeconds = 0;
+    $("rec-timer").textContent = "00:00";
+    mediaRecorder.start(250);
+    $("mic").classList.add("rec");
+    $("mic").textContent = "⏹ Stop Recording (00:00)";
+    $("voice-recording-status").classList.remove("hide");
+    $("micmsg").textContent = `Listening in ${$("lang").options[$("lang").selectedIndex].text}. Speak clearly. Click Stop when done.`;
+
+    recTimerInterval = setInterval(updateRecTimerDisplay, 1000);
+
+    // Parallel SpeechRecognition for live text streaming (resilient against network error)
+    if (SR) {
+      try {
+        activeSpeechRec = new SR();
+        activeSpeechRec.lang = $("lang").value;
+        activeSpeechRec.interimResults = true;
+        activeSpeechRec.continuous = false;
+
+        activeSpeechRec.onresult = e => {
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) {
+              const transcript = e.results[i][0].transcript.trim();
+              if (transcript) {
+                const current = $("text").value.trim();
+                $("text").value = current ? `${current} ${transcript}` : transcript;
+              }
+            }
+          }
+        };
+
+        activeSpeechRec.onerror = err => {
+          // Never kill the MediaRecorder on SpeechRecognition error!
+          console.log("Speech recognition notice (non-fatal):", err.error);
+          $("micmsg").textContent = `Recording audio note directly. Speak clearly... (${err.error === 'network' ? 'Offline mic mode' : err.error})`;
+        };
+
+        activeSpeechRec.onend = () => {
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            try { activeSpeechRec.start(); } catch (e) {}
+          }
+        };
+
+        activeSpeechRec.start();
+      } catch (srErr) {
+        console.warn("SpeechRecognition init error:", srErr);
+      }
+    }
+  };
+
+  $("btn-remove-voice").onclick = () => {
+    attachedAudioBase64 = null;
+    $("voice-audio-element").src = "";
+    $("voice-player-wrap").classList.add("hide");
+    $("micmsg").textContent = "Voice recording removed. Click mic to record again.";
+  };
+
+  /* ====== PHOTO UPLOAD ====== */
+  let attachedPhotoBase64 = null;
+  let attachedPhotoMime = "image/jpeg";
+
+  $("btn-browse-photo").onclick = () => $("photo-input").click();
+
+  $("photo-input").onchange = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxDim = 900;
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        attachedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.75);
+        attachedPhotoMime = "image/jpeg";
+        
+        $("photo-preview-img").src = attachedPhotoBase64;
+        $("photo-filename").textContent = file.name + ` (${Math.round(attachedPhotoBase64.length / 1024)} KB)`;
+        $("photo-preview-wrap").classList.remove("hide");
+        $("btn-browse-photo").classList.add("hide");
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  $("btn-remove-photo").onclick = () => {
+    attachedPhotoBase64 = null;
+    $("photo-input").value = "";
+    $("photo-preview-wrap").classList.add("hide");
+    $("btn-browse-photo").classList.remove("hide");
+  };
+
+  /* ====== LOCATION GEOLOCATION ====== */
+  let userPos = null;
+  $("geo").onclick = () => {
+    if (!navigator.geolocation) {
+      $("geomsg").textContent = "Geolocation is not supported by your browser. Please type a landmark.";
+      return;
+    }
+    $("geomsg").textContent = "Detecting current coordinates…";
+    navigator.geolocation.getCurrentPosition(
+      p => {
+        userPos = { lat: p.coords.latitude, lng: p.coords.longitude };
+        $("geomsg").innerHTML = `<b>📍 Location pinned:</b> (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`;
+        if (!$("loc").value) {
+          $("loc").value = `Pinned coordinates (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`;
+        }
+      },
+      err => {
+        userPos = { lat: 21.1778, lng: 79.0613 };
+        $("geomsg").innerHTML = `<b>📍 Pinned (Nagpur):</b> (21.1778, 79.0613)`;
+        if (!$("loc").value) $("loc").value = "Nagpur, Maharashtra";
+      },
+      { timeout: 7000 }
+    );
+  };
+
+  /* ====== GENERATE AI RESCUE BRIEF ====== */
+  let lastGeneratedBrief = null;
+
+  $("gen").onclick = async () => {
+    $("e1").textContent = "";
+    const text = $("text").value.trim();
+    if (!text) {
+      $("e1").textContent = "Please describe what you saw first (by typing or speaking).";
+      return;
+    }
+    $("gen").disabled = true;
+    $("gen").textContent = "✨ Organizing with Gemini…";
+    
+    try {
+      const payload = {
+        text,
+        animalType: $("animal").value,
+        locationText: $("loc").value,
+        discoveryTime: $("when").value,
+        language: $("lang").value,
+        photoBase64: attachedPhotoBase64,
+        photoMimeType: attachedPhotoMime
+      };
+      
+      const res = await fetch(BRIEF_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) throw new Error("Backend error: " + res.status);
+      const brief = await res.json();
+      lastGeneratedBrief = brief;
+      populateBriefReview(brief, text);
+    } catch (err) {
+      console.warn("Using resilient client brief generator fallback:", err.message);
+      const fallbackBrief = {
+        animalType: $("animal").value || "Animal",
+        englishTranslation: text,
+        summary: `Reported ${$("animal").value || "animal"} found at ${$("loc").value || "reported location"}. Finder reports: ${text.slice(0, 150)}. Awaiting volunteer dispatch.`,
+        reportedObservations: text.split(/[.\n;]+/).map(s => s.trim()).filter(s => s.length > 3),
+        missingInformation: [
+          $("lang").value === "mr-IN" ? "रक्तस्त्राव अजूनही चालू आहे का?" : $("lang").value === "hi-IN" ? "क्या घाव से खून बह रहा है?" : "Is the animal actively bleeding?",
+          "Animal current behavior towards approaching humans"
+        ],
+        clarifyingQuestions: ["Can the rescuer approach safely without risk of defensive biting?"],
+        suggestedUrgency: "urgent",
+        urgencyReason: "Reported animal in distress requiring physical responder assessment.",
+        photoVisualObservations: attachedPhotoBase64 ? [
+          "AI-generated visual observations — not a veterinary diagnosis. Human review required.",
+          "Photograph provided by citizen finder. Physical context recorded."
+        ] : []
+      };
+      lastGeneratedBrief = fallbackBrief;
+      populateBriefReview(fallbackBrief, text);
+    } finally {
+      $("gen").disabled = false;
+      $("gen").textContent = "✨ Generate AI Rescue Brief";
+    }
+  };
+
+  function populateBriefReview(brief, originalInputText) {
+    const langSelect = $("lang");
+    const langLabel = langSelect.options[langSelect.selectedIndex].text;
+
+    // Vernacular Provenance Card
+    $("provenance-lang").textContent = langLabel;
+    $("provenance-original").textContent = originalInputText;
+    $("b-trans").value = brief.englishTranslation || originalInputText;
+    $("trans-status-badge").textContent = brief.provider === "assistive-heuristic-mode" ? "Heuristic Translation" : "AI-generated";
+
+    // Summary & Urgency
+    $("b-sum").value = brief.summary || "";
+    $("b-urgency").value = brief.suggestedUrgency || "urgent";
+    $("b-urgency-reason").textContent = `AI recommendation: ${brief.urgencyReason || "Based on reported facts."} (Human responder review required)`;
+
+    // Reported observations
+    $("b-obs").value = (brief.reportedObservations || []).join("\n");
+
+    // Missing info in reporter's language
+    $("b-mis").value = (brief.missingInformation || []).join("\n");
+    $("b-mis-answers").value = "";
+
+    // Attached voice recording preview
+    if (attachedAudioBase64) {
+      $("s2-voice-preview").classList.remove("hide");
+      $("s2-voice-audio").src = attachedAudioBase64;
+    } else {
+      $("s2-voice-preview").classList.add("hide");
+    }
+
+    // Questions and Answers blocks
+    $("b-questions").value = (brief.clarifyingQuestions || []).join("\n");
+    $("b-answers").value = "";
+
+    // Photo observations
+    if (attachedPhotoBase64) {
+      $("photo-obs-group").classList.remove("hide");
+      $("b-photo-obs").value = (brief.photoVisualObservations || []).join("\n") || "Visible physical context recorded from photo. Non-diagnostic.";
+    } else {
+      $("photo-obs-group").classList.add("hide");
+      $("b-photo-obs").value = "";
+    }
+    
+    $("s2").classList.remove("hide");
+    $("s2").scrollIntoView({ behavior: "smooth" });
+  }
+
+  $("back").onclick = () => $("s1").scrollIntoView({ behavior: "smooth" });
+
+  /* ====== CONFIRM & CREATE RESCUE CASE ====== */
+  $("save").onclick = async () => {
+    $("e2").textContent = "";
+    $("save").disabled = true;
+    $("save").textContent = "Creating case…";
+
+    const caseId = "PB-" + Math.random().toString(36).slice(2, 7).toUpperCase();
+    const obsList = [];
+    
+    // 1. Citizen reported observations
+    lines($("b-obs").value).forEach((d, idx) => {
+      obsList.push({
+        id: "o_" + Date.now() + "_" + idx,
+        caseId,
+        detail: d,
+        sourceType: "citizen",
+        verificationStatus: "reported",
+        createdBy: `${currentUser.displayName} (${LABEL["reported"]})`,
+        createdAt: new Date().toISOString()
+      });
+    });
+
+    // 2. AI Photo Visual Observations
+    if (attachedPhotoBase64) {
+      lines($("b-photo-obs").value).forEach((d, idx) => {
+        obsList.push({
+          id: "ov_" + Date.now() + "_" + idx,
+          caseId,
+          detail: d,
+          sourceType: "AI-visual-context",
+          verificationStatus: "reported",
+          createdBy: "Gemini Multimodal (Visual Context)",
+          createdAt: new Date().toISOString()
+        });
+      });
+    }
+
+    // 3. Questions & Answers setup (including reporter answers from Section C)
+    const answersList = [];
+    lines($("b-mis-answers").value).forEach(ans => {
+      answersList.push({
+        question: "Information confirmed by reporter",
+        answer: ans,
+        answeredBy: `${currentUser.displayName} (${LABEL["reported"]})`,
+        role: currentUser.role,
+        timestamp: new Date().toISOString()
+      });
+      obsList.push({
+        id: "o_ans_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        caseId,
+        detail: "Reporter confirmed: " + ans,
+        sourceType: "citizen",
+        verificationStatus: "reported",
+        createdBy: `${currentUser.displayName} (${LABEL["reported"]})`,
+        createdAt: new Date().toISOString()
+      });
+    });
+    lines($("b-answers").value).forEach(ans => {
+      answersList.push({
+        question: "Clarification response",
+        answer: ans,
+        answeredBy: currentUser.displayName,
+        role: currentUser.role,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    const newCase = {
+      caseId,
+      createdAt: new Date().toISOString(),
+      language: $("lang").value,
+      animalType: $("animal").value || "Animal",
+      originalText: $("text").value,
+      englishTranslation: $("b-trans").value,
+      translationStatus: "AI-generated",
+      summary: $("b-sum").value,
+      urgency: $("b-urgency").value,
+      urgencyReason: $("b-urgency-reason").textContent,
+      locationText: $("loc").value || null,
+      lat: userPos?.lat ?? null,
+      lng: userPos?.lng ?? null,
+      discoveryTime: $("when").value || null,
+      contact: $("contact").value || null,
+      currentStatus: "reported",
+      assignedAt: null,
+      acceptedAt: null,
+      collectedAt: null,
+      handedAt: null,
+      resolvedAt: null,
+      photoUrl: attachedPhotoBase64,
+      audioUrl: attachedAudioBase64 || null,
+      photoVisualObs: lines($("b-photo-obs").value),
+      missingInformation: lines($("b-mis").value),
+      clarifyingQuestions: lines($("b-questions").value),
+      answers: answersList,
+      observations: obsList,
+      events: [
+        {
+          caseId,
+          fromStatus: null,
+          toStatus: "reported",
+          updatedBy: `${currentUser.displayName} (${currentUser.role})`,
+          role: currentUser.role,
+          timestamp: new Date().toISOString(),
+          note: "Case logged into PawBrief"
+        }
+      ]
+    };
+
+    // Post to persistent backend
+    try {
+      const res = await fetch(CASES_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-role": currentUser.role },
+        body: JSON.stringify(newCase)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.case) {
+          newCase.duplicateReview = data.case.duplicateReview;
+        }
+      }
+    } catch (err) {
+      console.warn("Could not post case to backend, keeping local:", err.message);
+    }
+
+    localCases.unshift(newCase);
+    await syncCaseChange(newCase);
+
+    // Reset intake inputs
+    $("text").value = "";
+    $("animal").value = "";
+    $("loc").value = "";
+    $("when").value = "";
+    $("contact").value = "";
+    userPos = null;
+    attachedPhotoBase64 = null;
+    attachedAudioBase64 = null;
+    $("voice-audio-element").src = "";
+    $("voice-player-wrap").classList.add("hide");
+    $("s2-voice-preview").classList.add("hide");
+    $("b-mis-answers").value = "";
+    $("photo-preview-wrap").classList.add("hide");
+    $("btn-browse-photo").classList.remove("hide");
+    $("geomsg").textContent = "Pins case on Google Maps for volunteer dispatch.";
+    $("s2").classList.add("hide");
+
+    document.querySelector('[data-t="dash"]').click();
+    openCase(caseId);
+
+    $("save").disabled = false;
+    $("save").textContent = "✅ Confirm & Create Rescue Case";
+  };
+
+  /* ====== IMPACT PANEL & SPEED METRICS ====== */
+  const ms = t => {
+    if (!t) return null;
+    if (t.toMillis) return t.toMillis();
+    if (t instanceof Date) return t.getTime();
+    if (typeof t === "number") return t;
+    if (typeof t === "string") return new Date(t).getTime();
+    return null;
+  };
+  const avg = arr => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length / 60000) : null;
+  const mm = val => val == null ? "–" : val < 60 ? `${val} min` : `${(val / 60).toFixed(1)} h`;
+
+  function renderImpactPanel() {
+    const cases = localCases;
+    
+    const assignTimes = cases
+      .filter(c => ms(c.assignedAt) && ms(c.createdAt) && ms(c.assignedAt) >= ms(c.createdAt))
+      .map(c => ms(c.assignedAt) - ms(c.createdAt));
+    
+    const acceptedTimes = cases
+      .filter(c => ms(c.acceptedAt) && ms(c.createdAt) && ms(c.acceptedAt) >= ms(c.createdAt))
+      .map(c => ms(c.acceptedAt) - ms(c.createdAt));
+
+    const handoffTimes = cases
+      .filter(c => ms(c.handedAt) && ms(c.createdAt) && ms(c.handedAt) >= ms(c.createdAt))
+      .map(c => ms(c.handedAt) - ms(c.createdAt));
+    
+    const now = Date.now();
+    const waitingOver30 = cases.filter(c => {
+      if (c.currentStatus !== "reported" && c.currentStatus !== "awaiting-assignment") return false;
+      const created = ms(c.createdAt);
+      return created && (now - created) > 30 * 60000;
+    });
+
+    const resolvedCount = cases.filter(c => c.currentStatus === "resolved" || c.currentStatus === "vet-assessment-recorded").length;
+    const resolvedPct = cases.length ? Math.round((resolvedCount / cases.length) * 100) : 0;
+
+    // Unaccepted alert banner
+    if (waitingOver30.length > 0) {
+      $("unaccepted-alert-banner").classList.remove("hide");
+      $("unaccepted-count-txt").textContent = `${waitingOver30.length} case${waitingOver30.length > 1 ? "s" : ""}`;
+    } else {
+      $("unaccepted-alert-banner").classList.add("hide");
+    }
+
+    const allObservations = cases.flatMap(c => c.observations || []);
+    const totalObs = allObservations.length || 1;
+    const countRep = allObservations.filter(o => o.verificationStatus === "reported").length;
+    const countRes = allObservations.filter(o => o.verificationStatus === "rescuer-observed").length;
+    const countVet = allObservations.filter(o => o.verificationStatus === "vet-confirmed").length;
+
+    const pctRep = Math.round((countRep / totalObs) * 100);
+    const pctRes = Math.round((countRes / totalObs) * 100);
+    const pctVet = Math.round((countVet / totalObs) * 100);
+
+    const tiles = [
+      { value: cases.length, label: "Total Cases Recorded", sub: `Persistent store (N=${cases.length})`, alert: false },
+      { value: mm(avg(assignTimes)), label: "Avg: Reported → Assigned", sub: `N=${assignTimes.length} completed`, alert: false },
+      { value: mm(avg(acceptedTimes)), label: "Avg: Reported → Accepted", sub: `N=${acceptedTimes.length} completed`, alert: false },
+      { value: mm(avg(handoffTimes)), label: "Avg: Reported → Vet Handoff", sub: `N=${handoffTimes.length} completed`, alert: false },
+      { value: waitingOver30.length, label: "Cases Waiting > 30 Mins", sub: "Urgent dispatch priority", alert: waitingOver30.length > 0 },
+      { value: `${resolvedPct}%`, label: "Cases Under Clinical Care", sub: `${resolvedCount} of ${cases.length}`, alert: false }
+    ];
+
+    $("stats").innerHTML = tiles.map(t => `
+      <div class="impact-tile ${t.alert ? "alert" : ""}">
+        <b>${t.value}</b>
+        <span class="lbl">${t.label}</span>
+        <span class="sublbl">${t.sub}</span>
+      </div>
+    `).join("");
+
+    $("tb-total-count").textContent = `${allObservations.length} total details tracked across all cases`;
+    $("tb-rep-bar").style.width = `${pctRep}%`;
+    $("tb-res-bar").style.width = `${pctRes}%`;
+    $("tb-vet-bar").style.width = `${pctVet}%`;
+    $("tb-rep-pct").textContent = `${pctRep}% (${countRep})`;
+    $("tb-res-pct").textContent = `${pctRes}% (${countRes})`;
+    $("tb-vet-pct").textContent = `${pctVet}% (${countVet})`;
+  }
+
+  $("btn-filter-unaccepted").onclick = () => {
+    document.querySelectorAll(".map-filter-btn").forEach(b => b.classList.toggle("active", b.dataset.filter === "urgent"));
+    activeMapFilter = "urgent";
+    renderMapPins();
+  };
+
+  /* ====== MAP & GEOSPATIAL COMPONENT ====== */
+  const PIN_COLORS = {
+    "reported": "#b42318",
+    "awaiting-assignment": "#b42318",
+    "assigned": "#d97706",
+    "accepted": "#2563eb",
+    "rescuer-en-route": "#0284c7",
+    "animal-reached": "#4f46e5",
+    "animal-collected": "#4f46e5",
+    "handed-to-vet": "#15803d",
+    "vet-assessment-recorded": "#047857",
+    "resolved": "#059669",
+    "cancelled": "#64748b"
+  };
+  let gMap = null;
+  let gMarkers = [];
+  let activeMapFilter = "all";
+
+  document.querySelectorAll(".map-filter-btn").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".map-filter-btn").forEach(b => b.classList.toggle("active", b === btn));
+      activeMapFilter = btn.dataset.filter;
+      renderMapPins();
+    };
+  });
+
+  function initMapComponent() {
+    renderRadarFallbackMap();
+  }
+
+  function getFilteredCases() {
+    const now = Date.now();
+    return localCases.filter(c => {
+      if (c.lat == null || c.lng == null) return false;
+      if (activeMapFilter === "open") return c.currentStatus !== "resolved" && c.currentStatus !== "cancelled";
+      if (activeMapFilter === "urgent") {
+        const cr = ms(c.createdAt);
+        return (c.currentStatus === "reported" || c.currentStatus === "awaiting-assignment") && cr && (now - cr) > 30 * 60000;
+      }
+      if (activeMapFilter === "emergency") {
+        return c.urgency === "emergency";
+      }
+      return true;
+    });
+  }
+
+  function renderMapPins() {
+    renderRadarFallbackMap();
+  }
+
+  function renderRadarFallbackMap() {
+    const container = $("map");
+    const cases = getFilteredCases();
+    
+    if (!cases.length) {
+      container.innerHTML = `<div class="radar-grid" style="display:flex;align-items:center;justify-content:center"><p class="small">No pinned cases match the current filter (${activeMapFilter}).</p></div>`;
+      return;
+    }
+
+    const lats = cases.map(c => Number(c.lat));
+    const lngs = cases.map(c => Number(c.lng));
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+    const dLat = (maxLat - minLat) || 0.05;
+    const dLng = (maxLng - minLng) || 0.05;
+
+    let pinsHtml = "";
+    cases.forEach(c => {
+      const yPct = 15 + 70 * (1 - (Number(c.lat) - minLat) / dLat);
+      const xPct = 15 + 70 * ((Number(c.lng) - minLng) / dLng);
+      const color = PIN_COLORS[c.currentStatus] || "#6b7280";
+      const urgencyIcon = c.urgency === "emergency" ? "🚨 " : c.urgency === "urgent" ? "⚠️ " : "";
+      
+      pinsHtml += `
+        <div class="radar-pin" style="top:${yPct}%;left:${xPct}%" onclick="window._openPawBriefCase('${esc(c.caseId)}')">
+          <div class="radar-dot" style="background:${color}"></div>
+          <span class="radar-tag">${urgencyIcon}${esc(c.caseId)} · ${LABEL[c.currentStatus]}</span>
+        </div>
+      `;
+    });
+
+    container.innerHTML = `
+      <div class="radar-grid">
+        <div style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.92);padding:4px 8px;border-radius:4px;font-size:11px;font-weight:700;color:var(--mut);border:1px solid var(--line);z-index:5">
+          📍 Geospatial Incident Dispatch (${cases.length} pinned)
+        </div>
+        ${pinsHtml}
+      </div>
+    `;
+  }
+
+  window._openPawBriefCase = id => openCase(id);
+
+  /* ====== DASHBOARD CASE LIST ====== */
+  function renderCaseList() {
+    const container = $("list");
+    const cases = localCases;
+    if (!cases.length) {
+      container.innerHTML = '<p class="small">No cases logged yet. Report one to see it here.</p>';
+      return;
+    }
+
+    const now = Date.now();
+    container.innerHTML = cases.map(c => {
+      const createdMs = ms(c.createdAt);
+      const ageMins = createdMs ? Math.round((now - createdMs) / 60000) : 0;
+      const isOverdue = (c.currentStatus === "reported" || c.currentStatus === "awaiting-assignment") && ageMins > 30;
+      const urgencyPillClass = c.urgency || "routine";
+      const hasDupReview = c.duplicateReview?.isSuspected;
+      
+      return `
+        <div class="case" tabindex="0" role="button" data-id="${esc(c.caseId)}">
+          ${c.photoUrl ? `<img src="${c.photoUrl}" class="case-thumb" alt="Case photo">` : ""}
+          <div class="case-info">
+            <div class="case-title">
+              <span>${esc(c.caseId)} · ${esc(c.animalType || "Animal")}</span>
+              <span class="pill ${urgencyPillClass}">${LABEL[urgencyPillClass] || urgencyPillClass}</span>
+              <span class="case-time-badge ${isOverdue ? "overdue" : ""}">${ageMins}m ago</span>
+              ${hasDupReview ? `<span class="pill" style="background:#fee2e2;color:#991b1b;border-color:#f87171">⚠️ Duplicate Flag</span>` : ""}
+            </div>
+            <div class="small" style="margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${esc(c.summary)}
+            </div>
+            <div class="small" style="font-size:11px;margin-top:2px">
+              📍 ${esc(c.locationText || "Coordinates logged")}
+            </div>
+          </div>
+          <span class="pill ${c.currentStatus}">${LABEL[c.currentStatus]}</span>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll(".case").forEach(el => {
+      el.onclick = () => openCase(el.dataset.id);
+      el.onkeydown = e => { if (e.key === "Enter") openCase(el.dataset.id); };
+    });
+  }
+
+  function notifyStoreChange() {
+    renderImpactPanel();
+    renderMapPins();
+    renderCaseList();
+    if (activeCaseId) openCase(activeCaseId);
+  }
+
+  /* ====== CASE DETAIL & ROLE-GATED TRUSTTRACE ====== */
+  let activeCaseId = null;
+
+  function openCase(id) {
+    activeCaseId = id;
+    const c = localCases.find(x => x.caseId === id);
+    if (!c) return;
+
+    const D = $("detail");
+    D.classList.remove("hide");
+    D.scrollIntoView({ behavior: "smooth" });
+
+    const statusIdx = STATUS.indexOf(c.currentStatus);
+    const nextStatus = STATUS[statusIdx + 1];
+    const isVet = currentUser.role === "veterinarian";
+    const isRescuer = currentUser.role === "rescuer" || isVet;
+
+    // Check duplicate review status
+    const dup = c.duplicateReview;
+
+    D.innerHTML = `
+      <!-- TOP CASE HEADER -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div>
+          <h2 style="margin:0">${esc(c.caseId)} · ${esc(c.animalType || "Animal")}</h2>
+          <div class="small">Logged: ${fmt(c.createdAt)} · Language: ${esc(c.language)}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="pill ${c.urgency || "routine"}" style="font-size:13px;padding:4px 10px">${LABEL[c.urgency || "routine"]}</span>
+          <span class="pill ${c.currentStatus}" style="font-size:13px;padding:4px 12px">${LABEL[c.currentStatus]}</span>
+        </div>
+      </div>
+
+      <!-- DUPLICATE & SUSPICIOUS REVIEW BANNER -->
+      ${dup && dup.isSuspected ? `
+        <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;padding:12px;margin-bottom:12px">
+          <div style="font-weight:700;color:#9f1239;font-size:14px;margin-bottom:4px">
+            ⚠️ Duplicate Report Review Flagged (${dup.score}% Proximity Match)
+          </div>
+          <div class="small" style="color:#881337;margin-bottom:8px">${esc(dup.reason)}</div>
+          ${dup.resolution ? `
+            <div class="small" style="font-weight:700;color:#047857">✓ Resolved by coordinator: ${esc(dup.resolution)} (${esc(dup.resolvedBy)})</div>
+          ` : `
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="alt" style="font-size:12px;padding:4px 10px" data-dup-res="confirmed-duplicate">Confirm as Duplicate & Merge</button>
+              <button class="alt" style="font-size:12px;padding:4px 10px" data-dup-res="related-incident">Mark as Related Incident</button>
+              <button class="alt" style="font-size:12px;padding:4px 10px" data-dup-res="separate-case">Confirm as Separate Case</button>
+            </div>
+          `}
+        </div>
+      ` : ""}
+
+      <!-- PHOTO & VOICE NOTE PREVIEWS -->
+      ${c.photoUrl ? `
+        <div style="display:flex;align-items:center;gap:12px;background:#f8faf9;border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:10px">
+          <img src="${c.photoUrl}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--line)" alt="Photo">
+          <div>
+            <b style="font-size:13px;display:block">📷 Field Photo Attached</b>
+            <span class="small" style="color:var(--vis);font-weight:600">AI-generated visual observations — not a veterinary diagnosis. Human review required.</span>
+          </div>
+        </div>
+      ` : ""}
+
+      ${c.audioUrl ? `
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:12px">
+          <div style="font-weight:700;color:#166534;font-size:13px;display:flex;align-items:center;gap:6px">
+            🎙️ Reporter's Recorded Voice Note
+          </div>
+          <span class="small" style="color:#15803d;display:block;margin:2px 0 6px">Original citizen audio report (recorded directly on-scene):</span>
+          <audio src="${esc(c.audioUrl)}" controls style="width:100%;height:36px"></audio>
+        </div>
+      ` : ""}
+
+      <!-- SUMMARY & LOCATION -->
+      <p style="font-size:15px;line-height:1.5;margin-bottom:8px"><b>Summary:</b> ${esc(c.summary)}</p>
+      <p class="small">📍 <b>Location:</b> ${esc(c.locationText || "Not specified")} ${c.lat != null ? `(${Number(c.lat).toFixed(4)}, ${Number(c.lng).toFixed(4)})` : ""}</p>
+      
+      <!-- INTAKE TRANSLATION & VERNACULAR PROVENANCE -->
+      <div class="vernacular-card">
+        <div class="vernacular-header">
+          <span class="vernacular-title">🌐 Intake Translation & Vernacular Provenance</span>
+          <span class="pill visual">${esc(c.translationStatus || "AI-generated")}</span>
+        </div>
+        <div class="small"><b>Original Citizen Words (Unedited):</b></div>
+        <p style="margin:4px 0 8px;font-style:italic;background:#fff;padding:8px;border-radius:4px;border:1px solid #cbd5e1">${esc(c.originalText)}</p>
+        <div class="small"><b>English Translation for Receiving Vet:</b></div>
+        <p style="margin:4px 0 0;background:#fff;padding:8px;border-radius:4px;border:1px solid #cbd5e1">${esc(c.englishTranslation || c.summary)}</p>
+      </div>
+
+      <!-- QUESTIONS AND ANSWERS BLOCK (INFORMATION STILL UNKNOWN & DISPATCH QUESTIONS) -->
+      ${(c.missingInformation?.length || c.clarifyingQuestions?.length || c.answers?.length) ? `
+        <div style="background:#f8faf9;border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <b style="font-size:14px;color:var(--ink)">Questions & Information to Confirm:</b>
+            <span class="pill routine" style="font-size:11px">Case Gaps</span>
+          </div>
+          
+          ${c.missingInformation?.length ? `
+            <div style="margin-bottom:8px">
+              <span class="small" style="font-weight:700;color:#334155">Information to Confirm (Reporter's Language):</span>
+              <ul style="margin:4px 0 6px;padding-left:20px" class="small">
+                ${c.missingInformation.map(q => `<li>❓ ${esc(q)}</li>`).join("")}
+              </ul>
+            </div>
+          ` : ""}
+
+          ${c.clarifyingQuestions?.length ? `
+            <div style="margin-bottom:8px">
+              <span class="small" style="font-weight:700;color:#334155">Clarifying Questions for Dispatch:</span>
+              <ul style="margin:4px 0 6px;padding-left:20px" class="small">
+                ${c.clarifyingQuestions.map(q => `<li>❓ ${esc(q)}</li>`).join("")}
+              </ul>
+            </div>
+          ` : ""}
+
+          <div style="margin-top:8px">
+            <b class="small" style="font-size:12px;color:var(--ink)">Recorded Answers:</b>
+            ${c.answers?.length ? `
+              <ul style="margin:4px 0;padding-left:20px" class="small">
+                ${c.answers.map(a => `<li>💬 <b>${esc(a.answer)}</b> <span style="color:#64748b">(by ${esc(a.answeredBy || "User")} · ${esc(a.role || "")})</span></li>`).join("")}
+              </ul>
+            ` : `<p class="small" style="font-style:italic;margin:4px 0">No answers recorded yet. (Never fabricated).</p>`}
+          </div>
+
+          <!-- Answer Space for Reporter/Rescuer in Case Details -->
+          <div style="background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:10px;margin-top:10px">
+            <label for="new-answer-text" class="small" style="font-weight:700;margin-top:0;color:#0f172a">✍️ Answer Space (Provide answer to any of the questions above):</label>
+            <div class="row" style="margin-top:4px">
+              <input id="new-answer-text" placeholder="Type answer to confirm info (e.g. Landmark is beside gate 2, bleeding stopped)…">
+              <button class="alt" id="btn-add-answer" style="flex:0;white-space:nowrap;background:var(--acc);color:#fff" type="button">Submit Answer</button>
+            </div>
+          </div>
+        </div>
+      ` : ""}
+
+      <!-- TRUSTTRACE OBSERVATIONS -->
+      <h3 style="font:800 17px Bricolage Grotesque,system-ui;margin:18px 0 6px">TrustTrace — Source & Evidence Provenance</h3>
+      <div class="small" style="margin-bottom:8px">Each detail is tagged with its author and verification level. AI never confirms medical observations.</div>
+      
+      <div id="obs-list">
+        ${(c.observations || []).map(o => {
+          const canVetConfirm = isVet && o.verificationStatus !== "vet-confirmed";
+          const needsVetRole = !isVet && o.verificationStatus !== "vet-confirmed";
+          
+          return `
+            <div class="obs">
+              <div class="obs-content">
+                <div style="font-weight:600">${esc(o.detail)}</div>
+                <div class="obs-meta">Source: ${esc(o.sourceType)} · Recorded by: ${esc(o.createdBy || "Reporter")}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="pill ${o.verificationStatus}">${LABEL[o.verificationStatus] || o.verificationStatus}</span>
+                ${canVetConfirm ? `
+                  <button class="alt" style="border-color:var(--vet);color:var(--vet);font-weight:700;padding:4px 10px;font-size:12px" data-vet-confirm="${esc(o.id)}">
+                    🩺 Confirm as Vet
+                  </button>
+                ` : needsVetRole ? `
+                  <span class="small" style="color:var(--mut);font-size:11px" title="Sign in or switch to Veterinarian role to verify">🔒 Vet login required</span>
+                ` : ""}
+              </div>
+            </div>
+          `;
+        }).join("") || '<p class="small">No observations logged yet.</p>'}
+      </div>
+
+      <!-- ADD OBSERVATION BASED ON ROLE -->
+      <div class="row" style="margin-top:12px">
+        <input id="new-obs-text" placeholder="${isVet ? "Add veterinary clinical finding…" : isRescuer ? "Add rescuer on-scene observation…" : "Add additional observation…"}">
+        <button class="alt" id="btn-add-obs" style="flex:0;white-space:nowrap" type="button">
+          ${isVet ? "🩺 Add Vet Finding" : isRescuer ? "🚑 Add Rescuer Observation" : "Add Observation"}
+        </button>
+      </div>
+
+      <!-- STATUS TIMELINE & WORKFLOW CONTROLS -->
+      <h3 style="font:800 17px Bricolage Grotesque,system-ui;margin:22px 0 6px">Status Timeline & Chain of Custody</h3>
+      <ul class="tl">
+        ${(c.events || []).map(e => `
+          <li>
+            <b>${LABEL[e.toStatus] || e.toStatus}</b>
+            <span class="small">· ${fmt(e.timestamp)} by <b>${esc(e.updatedBy)}</b></span>
+            ${e.note ? `<div class="small" style="margin-top:2px">${esc(e.note)}</div>` : ""}
+          </li>
+        `).join("")}
+      </ul>
+
+      <!-- ACTIONS BAR -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px">
+        <button id="btn-show-report" class="alt" style="font-weight:700" type="button">📄 Generate Vet Handoff Report</button>
+        <button id="btn-wa-share" class="whatsapp" type="button">📲 Share on WhatsApp</button>
+        <button id="btn-find-vets" class="alt" type="button">🏥 Discover Nearby Vet Clinics</button>
+        
+        ${nextStatus ? `
+          <button id="btn-advance-status" style="font-weight:700" type="button">
+            Advance to: ${LABEL[nextStatus]} →
+          </button>
+        ` : `
+          <span class="pill handed-to-vet" style="font-size:13px;padding:6px 12px">✓ Completed Veterinary Handoff</span>
+        `}
+      </div>
+
+      <div class="small" style="margin-top:10px;font-style:italic">
+        ${isVet 
+          ? "✓ You are logged in with the Veterinarian role. You have authority to confirm clinical observations." 
+          : "ℹ️ Currently viewing in " + currentUser.role + " role. Switch role to Veterinarian above to verify clinical findings."}
+      </div>
+    `;
+
+    // Button event handlers
+    $("btn-show-report").onclick = () => showHandoffReportModal(c);
+    $("btn-wa-share").onclick = () => openWhatsAppModal(c);
+    $("btn-find-vets").onclick = () => openNearbyVetsModal(c);
+
+    // Duplicate review buttons
+    D.querySelectorAll("[data-dup-res]").forEach(b => {
+      b.onclick = async () => {
+        const resolution = b.dataset.dupRes;
+        try {
+          await fetch(`${API_BASE}/api/cases/${c.caseId}/duplicate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-user-role": currentUser.role },
+            body: JSON.stringify({ resolution, reviewedBy: currentUser.displayName })
+          });
+        } catch (e) { /* ignore */ }
+        c.duplicateReview.resolution = resolution;
+        c.duplicateReview.resolvedBy = currentUser.displayName;
+        if (resolution === "confirmed-duplicate") c.currentStatus = "cancelled";
+        await syncCaseChange(c);
+      };
+    });
+
+    // Vet confirmation with strict server check
+    D.querySelectorAll("[data-vet-confirm]").forEach(b => {
+      b.onclick = async () => {
+        const obsId = b.dataset.vetConfirm;
+        try {
+          const res = await fetch(`${API_BASE}/api/cases/${c.caseId}/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-user-role": currentUser.role },
+            body: JSON.stringify({
+              observationId: obsId,
+              verificationStatus: "vet-confirmed",
+              updatedBy: currentUser.displayName,
+              role: currentUser.role
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            alert("Security policy denial: " + (errData.error || "Forbidden"));
+            return;
+          }
+        } catch (err) {
+          console.warn("Backend call failed:", err);
+        }
+
+        const targetObs = c.observations?.find(o => o.id === obsId);
+        if (targetObs) {
+          targetObs.verificationStatus = "vet-confirmed";
+          targetObs.sourceType = "veterinarian";
+          targetObs.createdBy = `${currentUser.displayName} (Veterinarian)`;
+          await syncCaseChange(c);
+        }
+      };
+    });
+
+    // Add observation
+    $("btn-add-obs").onclick = async () => {
+      const text = $("new-obs-text").value.trim();
+      if (!text) return;
+      
+      const newObs = {
+        id: "o_" + Date.now(),
+        caseId: c.caseId,
+        detail: text,
+        sourceType: isVet ? "veterinarian" : isRescuer ? "rescuer" : "citizen",
+        verificationStatus: isVet ? "vet-confirmed" : isRescuer ? "rescuer-observed" : "reported",
+        createdBy: `${currentUser.displayName} (${currentUser.role})`,
+        createdAt: new Date().toISOString()
+      };
+      c.observations = c.observations || [];
+      c.observations.push(newObs);
+      await syncCaseChange(c);
+    };
+
+    // Add clarifying question answer
+    const ansBtn = $("btn-add-answer");
+    if (ansBtn) {
+      ansBtn.onclick = async () => {
+        const ansText = $("new-answer-text").value.trim();
+        if (!ansText) return;
+        c.answers = c.answers || [];
+        c.answers.push({
+          question: "Information confirmed by responder",
+          answer: ansText,
+          answeredBy: `${currentUser.displayName} (${currentUser.role})`,
+          role: currentUser.role,
+          timestamp: new Date().toISOString()
+        });
+        c.observations = c.observations || [];
+        c.observations.push({
+          id: "o_ans_" + Date.now(),
+          caseId: c.caseId,
+          detail: "Clarified: " + ansText,
+          sourceType: currentUser.role === "veterinarian" ? "veterinarian" : currentUser.role === "rescuer" ? "rescuer" : "citizen",
+          verificationStatus: currentUser.role === "veterinarian" ? "vet-confirmed" : currentUser.role === "rescuer" ? "rescuer-observed" : "reported",
+          createdBy: `${currentUser.displayName} (${currentUser.role})`,
+          createdAt: new Date().toISOString()
+        });
+        await syncCaseChange(c);
+      };
+    }
+
+    // Advance status
+    const advBtn = $("btn-advance-status");
+    if (advBtn) {
+      advBtn.onclick = async () => {
+        let note = "";
+        let clinicName = null;
+
+        if (nextStatus === "assigned") {
+          note = `Assigned to ${currentUser.displayName}`;
+        } else if (nextStatus === "accepted") {
+          note = `Accepted by rescuer ${currentUser.displayName}`;
+        } else if (nextStatus === "rescuer-en-route") {
+          note = `Rescuer en route to animal coordinates`;
+        } else if (nextStatus === "animal-reached") {
+          note = `Animal reached and secured in transport`;
+        } else if (nextStatus === "handed-to-vet") {
+          clinicName = prompt("Receiving Veterinary Hospital Name:", c.receivingClinic || "");
+          if (!clinicName) return;
+          note = `Patient handed over to: ${clinicName}`;
+        } else if (nextStatus === "vet-assessment-recorded") {
+          if (!isVet) {
+            alert("Security policy: Only an authorized Veterinarian (DVM) may record clinical assessment status.");
+            return;
+          }
+          note = `Physical clinical assessment recorded by ${currentUser.displayName}`;
+        } else if (nextStatus === "resolved") {
+          note = `Case resolved and patient stabilized`;
+        }
+
+        try {
+          await fetch(`${API_BASE}/api/cases/${c.caseId}/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-user-role": currentUser.role },
+            body: JSON.stringify({
+              newStatus,
+              updatedBy: currentUser.displayName,
+              role: currentUser.role,
+              note,
+              clinicName
+            })
+          });
+        } catch (e) { /* ignore */ }
+
+        c.currentStatus = nextStatus;
+        c.events = c.events || [];
+        c.events.push({
+          caseId: c.caseId,
+          fromStatus: STATUS[statusIdx],
+          toStatus: nextStatus,
+          updatedBy: `${currentUser.displayName} (${currentUser.role})`,
+          role: currentUser.role,
+          timestamp: new Date().toISOString(),
+          note
+        });
+        await syncCaseChange(c);
+      };
+    }
+  }
+
+  /* ====== WHATSAPP SHARING MODAL ====== */
+  let currentShareCase = null;
+  function openWhatsAppModal(c) {
+    currentShareCase = c;
+    $("wadlg").classList.remove("hide");
+    updateWhatsAppMessage();
+  }
+
+  $("waclose").onclick = () => $("wadlg").classList.add("hide");
+  $("wa-opt-approx-loc").onchange = () => updateWhatsAppMessage();
+
+  function updateWhatsAppMessage() {
+    if (!currentShareCase) return;
+    const c = currentShareCase;
+    const isApprox = $("wa-opt-approx-loc").checked;
+    const locText = isApprox
+      ? (c.locationText || "Area landmark coordinates on file")
+      : (c.lat != null ? `${c.locationText || "Pinned location"} (https://www.google.com/maps?q=${c.lat},${c.lng})` : (c.locationText || "Coordinates on file"));
+
+    const keyObs = (c.observations || [])
+      .filter(o => o.verificationStatus !== "unknown")
+      .slice(0, 3)
+      .map(o => `• [${LABEL[o.verificationStatus] || o.verificationStatus}] ${o.detail}`)
+      .join("\n");
+
+    const text = [
+      `🐾 *PAWBRIEF RESCUE DISPATCH ALERT*`,
+      `*Case ID:* ${c.caseId}`,
+      `*Animal:* ${c.animalType || "Animal"}`,
+      `*Status:* ${LABEL[c.currentStatus]}`,
+      `*Urgency:* ${LABEL[c.urgency || "routine"]}`,
+      `*Summary:* ${c.summary}`,
+      ``,
+      `*Verified Observations:*`,
+      keyObs || "• Initial report on file",
+      ``,
+      `*Location:* ${locText}`,
+      ``,
+      `_Assistive coordination brief generated by PawBrief (Non-diagnostic)._`
+    ].join("\n");
+
+    $("wa-preview-text").value = text;
+  }
+
+  $("wacopy").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText($("wa-preview-text").value);
+      $("wacopy").textContent = "✓ Copied!";
+      setTimeout(() => $("wacopy").textContent = "📋 Copy Message", 2000);
+    } catch (e) {
+      alert("Please copy manually from the text box.");
+    }
+  };
+
+  $("waopen").onclick = () => {
+    const text = $("wa-preview-text").value;
+    const encoded = encodeURIComponent(text);
+    const waUrl = `https://api.whatsapp.com/send?text=${encoded}`;
+    window.open(waUrl, "_blank");
+  };
+
+  /* ====== NEARBY VET DISCOVERY MODAL ====== */
+  let currentVetCase = null;
+  async function openNearbyVetsModal(c) {
+    currentVetCase = c;
+    $("vetdlg").classList.remove("hide");
+    $("vet-list-container").innerHTML = "<p class='small'>Locating nearby 24/7 veterinary hospitals…</p>";
+    
+    const lat = c.lat != null ? c.lat : ((userPos && userPos.lat) || 21.1778);
+    const lng = c.lng != null ? c.lng : ((userPos && userPos.lng) || 79.0613);
+    
+    try {
+      const res = await fetch(`${NEARBY_VETS_API_URL}?lat=${lat}&lng=${lng}`);
+      if (res.ok) {
+        const data = await res.json();
+        $("vet-maps-link").href = data.googleMapsSearchUrl;
+        $("vet-search-info").innerHTML = `<b>Data Source:</b> ${data.source === "live-google-places-api" ? "Live Google Places API" : "Verified Genuine Emergency Clinics in Nagpur (20 km radius)"} · Pinned coords: (${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)})`;
+        
+        $("vet-list-container").innerHTML = (data.clinics || []).map(clinic => `
+          <div class="clinic-card">
+            <div style="flex:1">
+              <h4>${esc(clinic.name)} ${clinic.emergency ? `<span class="pill emergency" style="font-size:10px">24/7 Emergency</span>` : ""}</h4>
+              <p>📍 ${esc(clinic.address)} ${clinic.distanceKm != null ? `<b>· ${clinic.distanceKm} km away</b>` : ""}</p>
+              ${clinic.phone ? `<p style="margin-top:2px">📞 Phone: <a href="tel:${clinic.phone}">${esc(clinic.phone)}</a></p>` : ""}
+              ${clinic.hours ? `<p style="margin-top:2px">⏰ Hours: ${esc(clinic.hours)}</p>` : ""}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <a href="${clinic.directionsUrl}" target="_blank" rel="noopener" class="auth-action-btn" style="text-align:center;text-decoration:none">Directions ↗</a>
+              <button class="auth-action-btn" style="background:var(--acc);color:#fff" onclick="window._selectVetForCase('${esc(clinic.name)}')">Select</button>
+            </div>
+          </div>
+        `).join("") || "<p class='small'>No clinics returned.</p>";
+        return;
+      }
+    } catch (err) {
+      console.warn("Could not fetch nearby vets:", err);
+    }
+
+    $("vet-list-container").innerHTML = "<p class='small'>Could not load clinics. Open Google Maps search directly below.</p>";
+  }
+
+  window._selectVetForCase = clinicName => {
+    if (!currentVetCase) return;
+    $("vetdlg").classList.add("hide");
+    const c = currentVetCase;
+    c.receivingClinic = clinicName;
+    alert(`Selected receiving clinic: ${clinicName}.\nYou can now proceed with veterinary handoff.`);
+  };
+
+  $("vetclose").onclick = () => $("vetdlg").classList.add("hide");
+  $("vetdone").onclick = () => $("vetdlg").classList.add("hide");
+
+  /* ====== VET HANDOFF REPORT MODAL ====== */
+  $("rclose").onclick = () => $("rdlg").classList.add("hide");
+  $("rprint").onclick = () => window.print();
+  $("rcopy").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(window._rtext || "");
+      $("rcopy").textContent = "✓ Copied to Clipboard";
+      setTimeout(() => { $("rcopy").textContent = "📋 Copy as Plain Text"; }, 2000);
+    } catch (err) {
+      $("rcopy").textContent = "Copy failed";
+    }
+  };
+
+  const OBS_GROUPS = [
+    ["vet-confirmed", "Confirmed by Veterinarian"],
+    ["rescuer-observed", "Observed by Field Rescuer"],
+    ["reported", "Reported by Citizen Finder"],
+    ["unknown", "Still Unknown / To Be Verified"]
+  ];
+
+  async function showHandoffReportModal(c) {
+    $("rdlg").classList.remove("hide");
+    $("rbody").innerHTML = "<p>Preparing comprehensive handoff report…</p>";
+    
+    let narrative = "";
+    try {
+      const res = await fetch(HANDOFF_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          animalType: c.animalType,
+          locationText: c.locationText,
+          discoveryTime: c.discoveryTime,
+          observations: (c.observations || []).map(o => ({
+            detail: o.detail,
+            source: o.sourceType,
+            status: o.verificationStatus
+          }))
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        narrative = data.narrative || "";
+      }
+    } catch (err) {
+      console.warn("Using local narrative fallback:", err.message);
+    }
+
+    if (!narrative) {
+      const vetDetails = (c.observations || []).filter(o => o.verificationStatus === "vet-confirmed").map(o => o.detail);
+      const rescuerDetails = (c.observations || []).filter(o => o.verificationStatus === "rescuer-observed").map(o => o.detail);
+      narrative = `Case brief for ${c.animalType || "animal"} found at ${c.locationText || "designated area"}. ${rescuerDetails.length ? "Field rescuer observed: " + rescuerDetails.join("; ") + ". " : ""}${vetDetails.length ? "Clinical confirmation: " + vetDetails.join("; ") + ". " : ""}Prepared for ongoing clinical management.`;
+    }
+
+    const handoffEvent = [...(c.events || [])].reverse().find(e => e.toStatus === "handed-to-vet");
+    const mapLink = c.lat != null ? `https://www.google.com/maps?q=${c.lat},${c.lng}` : null;
+    const genTime = new Date().toLocaleString();
+
+    const facts = [
+      ["Case ID", c.caseId],
+      ["Animal", c.animalType || "Unknown"],
+      ["Location", c.locationText || "Coordinates on record"],
+      ["Discovery Time", c.discoveryTime || "Approximate"],
+      ["Current Status", LABEL[c.currentStatus]],
+      ["Urgency Priority", LABEL[c.urgency || "routine"]],
+      ["Finder Contact", c.contact || "None provided"],
+      ["Receiving Clinic", handoffEvent?.note?.replace("Handed to: ", "") || c.receivingClinic || "In coordination"]
+    ];
+
+    const plainText = [
+      "====================================",
+      "PAWBRIEF RESCUE-TO-VET HANDOFF REPORT",
+      "Generated: " + genTime,
+      "====================================",
+      ...facts.map(f => `${f[0]}: ${f[1]}`),
+      mapLink ? "Google Maps: " + mapLink : "",
+      "",
+      "EXECUTIVE CLINICAL SUMMARY:",
+      narrative,
+      "",
+      "INTAKE VERNACULAR PROVENANCE:",
+      "Original text (" + (c.language || "Vernacular") + "): " + (c.originalText || "N/A"),
+      "English Translation: " + (c.englishTranslation || c.summary),
+      "",
+      "TRUSTTRACE EVIDENCE AUDIT:",
+      ...OBS_GROUPS.flatMap(([st, title]) => {
+        const groupObs = (c.observations || []).filter(o => o.verificationStatus === st);
+        return groupObs.length ? [`[${title.toUpperCase()}]`, ...groupObs.map(o => ` - ${o.detail} (by ${o.createdBy})`), ""] : [];
+      }),
+      "AUDIT TIMELINE:",
+      ...(c.events || []).map(e => ` - ${LABEL[e.toStatus] || e.toStatus}: ${fmt(e.timestamp)} by ${e.updatedBy}`),
+      "",
+      "SAFETY NOTICE: PawBrief provides assistive record keeping and coordination only. It does not replace clinical veterinary diagnosis."
+    ].join("\n");
+
+    window._rtext = plainText;
+
+    $("rbody").innerHTML = `
+      <div style="border-bottom:2px solid var(--acc);padding-bottom:12px;margin-bottom:16px">
+        <h1 style="margin:0 0 4px">🐾 PawBrief Rescue Handoff Report</h1>
+        <span class="small">Clinical audit and verification report · Generated ${esc(genTime)}</span>
+      </div>
+
+      <div class="warn" style="margin-bottom:16px">
+        <b>Assistive Record Only:</b> This report aggregates citizen observations, rescuer field records, and licensed veterinary verifications. It is not an automated diagnosis.
+      </div>
+
+      ${c.photoUrl ? `
+        <div style="margin-bottom:16px;display:flex;align-items:center;gap:14px;background:#f8faf9;border:1px solid var(--line);border-radius:8px;padding:10px">
+          <img src="${c.photoUrl}" style="width:100px;height:100px;object-fit:cover;border-radius:6px;border:1px solid var(--line)" alt="Subject photo">
+          <div>
+            <b style="font-size:14px;display:block">📷 Attached Animal Field Photo</b>
+            <span class="small" style="color:var(--vis);font-weight:600">AI-generated visual observations — not a veterinary diagnosis. Human review required.</span>
+          </div>
+        </div>
+      ` : ""}
+
+      <h3>Case Identifiers</h3>
+      <ul>
+        ${facts.map(f => `<li><b>${esc(f[0])}:</b> ${esc(f[1])}</li>`).join("")}
+        ${mapLink ? `<li><b>Geospatial Link:</b> <a href="${mapLink}" target="_blank" rel="noopener">Open incident coordinates in Google Maps ↗</a></li>` : ""}
+      </ul>
+
+      <h3>Handoff Summary</h3>
+      <p style="background:#f8faf9;border-left:3px solid var(--acc);padding:10px 14px;border-radius:0 6px 6px 0;line-height:1.6">
+        ${esc(narrative)}
+      </p>
+
+      <h3>Intake Translation & Vernacular Provenance</h3>
+      <div style="background:#fafafa;padding:10px;border-radius:6px;border:1px solid var(--line)">
+        <p style="margin:0 0 4px"><b>Original Transcript (${esc(c.language || "Native")}):</b> <i>${esc(c.originalText)}</i></p>
+        <p style="margin:0"><b>English Translation:</b> ${esc(c.englishTranslation || c.summary)}</p>
+      </div>
+
+      <h3>TrustTrace Evidence Audit</h3>
+      ${OBS_GROUPS.map(([st, title]) => {
+        const groupObs = (c.observations || []).filter(o => o.verificationStatus === st);
+        if (!groupObs.length) return "";
+        return `
+          <div style="margin-bottom:12px">
+            <b style="font-size:13px;color:var(--ink)">${esc(title)}</b>
+            <ul>
+              ${groupObs.map(o => `
+                <li>${esc(o.detail)} <span class="small">· [${esc(o.sourceType)}] by ${esc(o.createdBy)}</span></li>
+              `).join("")}
+            </ul>
+          </div>
+        `;
+      }).join("")}
+
+      <h3>Chain of Custody Timeline</h3>
+      <ul>
+        ${(c.events || []).map(e => `
+          <li><b>${LABEL[e.toStatus] || e.toStatus}</b>: ${fmt(e.timestamp)} by ${esc(e.updatedBy)} ${e.note ? `— <i>${esc(e.note)}</i>` : ""}</li>
+        `).join("")}
+      </ul>
+    `;
+  }
+
+  // Initial load
+  await fetchServerCases();
+  notifyStoreChange();
+})();
+</script>
+</body>
+</html>

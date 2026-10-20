@@ -1,0 +1,2 @@
+{"name":"pawbrief-api","type":"module","main":"server.js","scripts":{"start":"node server.js","test":"node backend/test/pawbrief.test.js"},
+"dependencies":{"@google-cloud/vertexai":"^1.9.0","cors":"^2.8.5","dotenv":"^18.0.7","express":"^4.19.2"},"engines":{"node":">=20"}}
